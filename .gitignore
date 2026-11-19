@@ -7,4 +7,30 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
+env/
+venv/
+
+# Environment secrets
+.env
+.env.local
+*.env
+
+# Generated runtime outputs & images
+images/
+outputs/
+*.png
+*.jpg
+
+
+# Environment secrets
+.env
+.env.local
+*.env
+
+# Generated runtime outputs & images
+images/
+outputs/
+*.png
+*.jpg
+

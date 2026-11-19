@@ -48,18 +48,22 @@ def route_next(state: State) -> str:
 # -----------------------------
 # 4) Research (Tavily) 
 # -----------------------------
-def _tavily_search(query: str, max_results: int = 5) -> List[dict]:
+def _tavily_search(query: str, max_results: int = 3) -> List[dict]:
     
     tool = TavilySearchResults(max_results=max_results)
     results = tool.invoke({"query": query})
 
     normalized: List[dict] = []
     for r in results or []:
+        raw_snippet = r.get("content") or r.get("snippet") or ""
+        # Truncate snippet length to prevent token explosion
+        snippet = raw_snippet[:350]
+
         normalized.append(
             {
-                "title": r.get("title") or "",
+                "title": (r.get("title") or "")[:120],
                 "url": r.get("url") or "",
-                "snippet": r.get("content") or r.get("snippet") or "",
+                "snippet": snippet,
                 "published_at": r.get("published_date") or r.get("published_at"),
                 "source": r.get("source"),
             }
@@ -70,23 +74,35 @@ def _tavily_search(query: str, max_results: int = 5) -> List[dict]:
 
 def research_node(state: State) -> dict:
 
-    # take the first 10 queries from state
-    queries = (state.get("queries", []) or [])
-    max_results = 6
+    # Limit to top 3 queries from router to respect token limits
+    queries = (state.get("queries", []) or [])[:3]
+    max_results = 3
 
-    raw_results: List[dict] = []
+    seen_urls = set()
+    compact_results: List[dict] = []
 
     for q in queries:
-        raw_results.extend(_tavily_search(q, max_results=max_results))
+        for item in _tavily_search(q, max_results=max_results):
+            url = item.get("url")
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                compact_results.append({
+                    "title": item["title"],
+                    "url": item["url"],
+                    "snippet": item["snippet"],
+                })
 
-    if not raw_results:
+    if not compact_results:
         return {"evidence": []}
+
+    # Cap to top 8 deduplicated references
+    compact_results = compact_results[:8]
 
     extractor = llm.with_structured_output(EvidencePack)
     pack = extractor.invoke(
         [
             SystemMessage(content=RESEARCH_SYSTEM),
-            HumanMessage(content=f"Raw results:\n{raw_results}"),
+            HumanMessage(content=f"Raw results:\n{compact_results}"),
         ]
     )
 

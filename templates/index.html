@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlogSmith // Autonomous Technical Publisher</title>
+    
+    <!-- Fonts: Plus Jakarta Sans (UI), Newsreader (Editorial Serif), JetBrains Mono (Code) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Code Highlight CSS (GitHub Dark Dimmed) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Marked (Markdown Parser) & DOMPurify (Sanitizer) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    
+    <!-- App Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <div class="brand">
+                <span class="brand-glyph">✦</span>
+                <span class="brand-name">BLOGSMITH</span>
+            </div>
+            <div class="engine-tag">
+                <span class="engine-badge">LangGraph 1.2</span>
+                <span class="engine-badge engine-model">Groq + Gemini</span>
+            </div>
+        </div>
+
+        <div class="topbar-right">
+            <div class="system-status" id="systemStatus">
+                <span class="status-dot"></span>
+                <span class="status-label" id="statusLabel">Connecting to Graph...</span>
+            </div>
+            <a href="https://github.com" target="_blank" class="topbar-link" title="Documentation">
+                <i data-lucide="book-open"></i>
+                <span>Docs</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Studio Workspace -->
+    <main class="studio-layout">
+        
+        <!-- LEFT PANEL: Control & Multi-Agent Observability Deck -->
+        <aside class="observability-panel">
+            <div class="panel-inner">
+                
+                <!-- Topic Input Card -->
+                <section class="card input-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i data-lucide="compass"></i>
+                            <span>Research Directive</span>
+                        </div>
+                        <span class="shortcut-hint">Ctrl + Enter to run</span>
+                    </div>
+
+                    <form id="agentForm" class="topic-form" onsubmit="return false;">
+                        <div class="textarea-wrapper">
+                            <textarea 
+                                id="topicInput" 
+                                placeholder="E.g., Deep dive into Distributed Consensus with Raft: Leader Election, Log Replication, and Safety Invariants..."
+                                rows="3"
+                                required
+                            ></textarea>
+                            <div class="textarea-footer">
+                                <span class="char-count" id="charCount">0 characters</span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Inspiration Chips -->
+                        <div class="inspiration-row">
+                            <span class="inspiration-label">Try:</span>
+                            <div class="inspiration-chips">
+                                <button type="button" class="chip" data-topic="How FlashAttention-2 optimizes GPU Memory IO and Tiling for LLMs">FlashAttention-2</button>
+                                <button type="button" class="chip" data-topic="Distributed Consensus: Raft vs Paxos architecture, invariants, and leader election">Raft vs Paxos</button>
+                                <button type="button" class="chip" data-topic="Building high-throughput event loops in Rust with Tokio and Mio">Rust Tokio Event Loops</button>
+                                <button type="button" class="chip" data-topic="Vector Database indexing internals: HNSW graphs vs IVF-PQ quantization">HNSW vs IVF-PQ</button>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" id="submitBtn" class="btn btn-primary">
+                                <i data-lucide="play" class="btn-icon"></i>
+                                <span class="btn-text">Generate Blog</span>
+                            </button>
+                            <button type="button" id="resetBtn" class="btn btn-ghost" title="Reset state" style="display: none;">
+                                <i data-lucide="rotate-ccw"></i>
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Run Overview Metadata (shown during & after execution) -->
+                <section id="runMetaCard" class="card run-meta-card" style="display: none;">
+                    <div class="run-meta-row">
+                        <div class="meta-item">
+                            <span class="meta-label">Run ID</span>
+                            <span class="meta-val code-font" id="metaRunId">—</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Routing Mode</span>
+                            <span class="meta-val mode-badge" id="metaMode">Awaiting Router</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Sections Plan</span>
+                            <span class="meta-val" id="metaSectionCount">0</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Multi-Agent DAG Pipeline Stepper -->
+                <section class="card pipeline-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i data-lucide="git-branch"></i>
+                            <span>Multi-Agent DAG</span>
+                        </div>
+                        <span class="pipeline-status-badge" id="pipelineStatusBadge">Idle</span>
+                    </div>
+
+                    <div class="pipeline-stepper" id="pipelineStepper">
+                        
+                        <!-- Step 1: Router -->
+                        <div class="step-node" id="step-router" data-stage="router">
+                            <div class="node-track">
+                                <span class="node-indicator"></span>
+                                <span class="node-line"></span>
+                            </div>
+                            <div class="node-content">
+                                <div class="node-header">
+                                    <span class="node-title">1. Router Node</span>
+                                    <span class="node-badge" id="badge-router">Pending</span>
+                                </div>
+                                <p class="node-desc" id="desc-router">Analyzes topic depth, decides search requirement & mode.</p>
+                                <div class="node-details" id="details-router" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Research -->
+                        <div class="step-node" id="step-research" data-stage="research">
+                            <div class="node-track">
+                                <span class="node-indicator"></span>
+                                <span class="node-line"></span>
+                            </div>
+                            <div class="node-content">
+                                <div class="node-header">
+                                    <span class="node-title">2. Research Agent (Tavily)</span>
+                                    <span class="node-badge" id="badge-research">Pending</span>
+                                </div>
+                                <p class="node-desc" id="desc-research">Gathers authoritative references & deduplicates evidence.</p>
+                                <div class="node-details" id="details-research" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Orchestrator -->
+                        <div class="step-node" id="step-orchestrator" data-stage="orchestrator">
+                            <div class="node-track">
+                                <span class="node-indicator"></span>
+                                <span class="node-line"></span>
+                            </div>
+                            <div class="node-content">
+                                <div class="node-header">
+                                    <span class="node-title">3. Orchestrator</span>
+                                    <span class="node-badge" id="badge-orchestrator">Pending</span>
+                                </div>
+                                <p class="node-desc" id="desc-orchestrator">Synthesizes editorial outline, audience, tone & subtasks.</p>
+                                <div class="node-details" id="details-orchestrator" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Parallel Section Workers -->
+                        <div class="step-node" id="step-workers" data-stage="workers">
+                            <div class="node-track">
+                                <span class="node-indicator"></span>
+                                <span class="node-line"></span>
+                            </div>
+                            <div class="node-content">
+                                <div class="node-header">
+                                    <span class="node-title">4. Parallel Workers (Fanout)</span>
+                                    <span class="node-badge" id="badge-workers">Pending</span>
+                                </div>
+                                <p class="node-desc" id="desc-workers">Autonomous section authors draft in parallel via Send API.</p>
+                                <!-- Interactive Workers Progress Matrix -->
+                                <div class="workers-matrix" id="workersMatrix"></div>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Reducer & Visuals -->
+                        <div class="step-node" id="step-reducer" data-stage="reducer">
+                            <div class="node-track">
+                                <span class="node-indicator"></span>
+                            </div>
+                            <div class="node-content">
+                                <div class="node-header">
+                                    <span class="node-title">5. Reducer Subgraph</span>
+                                    <span class="node-badge" id="badge-reducer">Pending</span>
+                                </div>
+                                <p class="node-desc" id="desc-reducer">Content merge, technical diagram specs & Gemini image generation.</p>
+                                <div class="substage-list" id="substageList"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- Inspector Drawer: Plan / Evidence / Visuals -->
+                <section class="card inspector-card">
+                    <div class="inspector-tabs">
+                        <button type="button" class="tab-btn active" data-tab="tabOutline">
+                            <i data-lucide="list-tree"></i>
+                            <span>Outline</span>
+                            <span class="tab-badge" id="outlineCount">0</span>
+                        </button>
+                        <button type="button" class="tab-btn" data-tab="tabSources">
+                            <i data-lucide="link"></i>
+                            <span>Evidence</span>
+                            <span class="tab-badge" id="sourcesCount">0</span>
+                        </button>
+                        <button type="button" class="tab-btn" data-tab="tabVisuals">
+                            <i data-lucide="image"></i>
+                            <span>Visuals</span>
+                            <span class="tab-badge" id="visualsCount">0</span>
+                        </button>
+                    </div>
+
+                    <div class="tab-content" id="tabOutline">
+                        <div class="empty-tab-state" id="emptyOutline">Outline will appear when Orchestrator runs.</div>
+                        <div class="outline-list" id="outlineList"></div>
+                    </div>
+
+                    <div class="tab-content" id="tabSources" style="display: none;">
+                        <div class="empty-tab-state" id="emptySources">Evidence pack will appear after Research.</div>
+                        <div class="sources-list" id="sourcesList"></div>
+                    </div>
+
+                    <div class="tab-content" id="tabVisuals" style="display: none;">
+                        <div class="empty-tab-state" id="emptyVisuals">Diagram specs will appear during Reducer step.</div>
+                        <div class="visuals-grid" id="visualsGrid"></div>
+                    </div>
+                </section>
+
+            </div>
+        </aside>
+
+        <!-- RIGHT PANEL: Editorial Canvas & Live Document -->
+        <main class="canvas-panel">
+            
+            <!-- Canvas Toolbar -->
+            <div class="canvas-toolbar">
+                <div class="toolbar-left">
+                    <div class="view-switcher">
+                        <button type="button" class="view-btn active" data-view="rendered" id="btnViewRendered">
+                            <i data-lucide="book-open"></i>
+                            <span>Article View</span>
+                        </button>
+                        <button type="button" class="view-btn" data-view="markdown" id="btnViewMarkdown">
+                            <i data-lucide="file-code-2"></i>
+                            <span>Markdown Source</span>
+                        </button>
+                    </div>
+                    
+                    <div class="doc-stats">
+                        <span class="stat-pill">
+                            <i data-lucide="align-left"></i>
+                            <span id="statWords">0 words</span>
+                        </span>
+                        <span class="stat-pill">
+                            <i data-lucide="clock"></i>
+                            <span id="statReadTime">0 min read</span>
+                        </span>
+                        <span class="stat-pill">
+                            <i data-lucide="layers"></i>
+                            <span id="statSections">0/0 sections</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="toolbar-right">
+                    <button type="button" class="btn btn-toolbar" id="copyMarkdownBtn" title="Copy raw Markdown" disabled>
+                        <i data-lucide="copy"></i>
+                        <span>Copy</span>
+                    </button>
+                    <a id="downloadMarkdownBtn" class="btn btn-toolbar btn-accent" title="Download Markdown (.md)" style="pointer-events: none; opacity: 0.5;">
+                        <i data-lucide="download"></i>
+                        <span>Export .md</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Canvas Workspace -->
+            <div class="canvas-scroll-wrapper">
+                
+                <!-- 1. Idle / Welcome Blueprint State -->
+                <div class="canvas-placeholder" id="canvasPlaceholder">
+                    <div class="blueprint-badge">Multi-Agent Editorial Architecture</div>
+                    <h1 class="blueprint-title">Autonomous Technical Blog Publisher</h1>
+                    <p class="blueprint-desc">
+                        Provide a technical subject. BlogSmith orchestrates deep Tavily research, produces an architectural blueprint, delegates section drafts across parallel LangGraph workers, and renders AI technical diagrams inline.
+                    </p>
+
+                    <div class="blueprint-grid">
+                        <div class="blueprint-card">
+                            <div class="blueprint-card-icon"><i data-lucide="route"></i></div>
+                            <h3>Intelligent Router</h3>
+                            <p>Evaluates request complexity, picking closed-book, open-book, or hybrid synthesis mode.</p>
+                        </div>
+                        <div class="blueprint-card">
+                            <div class="blueprint-card-icon"><i data-lucide="search"></i></div>
+                            <h3>Evidence Distillation</h3>
+                            <p>Extracts verified URLs, publications, and citations using Tavily Search API.</p>
+                        </div>
+                        <div class="blueprint-card">
+                            <div class="blueprint-card-icon"><i data-lucide="cpu"></i></div>
+                            <h3>Parallel Map-Reduce</h3>
+                            <p>Fanout section synthesis via LangGraph <code>Send</code> API for concurrent authoring.</p>
+                        </div>
+                        <div class="blueprint-card">
+                            <div class="blueprint-card-icon"><i data-lucide="palette"></i></div>
+                            <h3>Visual Diagram Specs</h3>
+                            <p>Generates contextual technical visuals with Gemini Flash Image and inserts inline placeholders.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Live Streaming Banner (Visible during generation) -->
+                <div class="streaming-banner" id="streamingBanner" style="display: none;">
+                    <div class="banner-pulse"></div>
+                    <div class="banner-text">
+                        <span class="banner-title" id="bannerTitle">Synthesizing...</span>
+                        <span class="banner-detail" id="bannerDetail">LangGraph execution active</span>
+                    </div>
+                    <div class="banner-progress-wrap">
+                        <div class="banner-progress-bar" id="bannerProgressBar" style="width: 5%;"></div>
+                    </div>
+                </div>
+
+                <!-- 3. Rendered Markdown Article View -->
+                <article class="prose-article" id="renderedArticle" style="display: none;">
+                    <!-- Sections will be injected here dynamically -->
+                </article>
+
+                <!-- 4. Raw Markdown View (Hidden by default) -->
+                <div class="raw-markdown-view" id="rawMarkdownView" style="display: none;">
+                    <textarea id="rawMarkdownTextarea" readonly spellcheck="false"></textarea>
+                </div>
+
+            </div>
+
+        </main>
+
+    </main>
+
+    <!-- Lightbox Modal for Diagram Inspection -->
+    <div class="lightbox-modal" id="lightboxModal" style="display: none;">
+        <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+        <div class="lightbox-content">
+            <button class="lightbox-close" id="lightboxClose">&times;</button>
+            <img id="lightboxImg" src="" alt="Enlarged Diagram">
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- App Script -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
