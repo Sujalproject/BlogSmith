@@ -188,15 +188,6 @@ Once running, navigate to:
 
 ---
 
-## 🛡️ Error Handling & Resiliency
-
-* **Groq Rate-Limit Prevention**: Tavily results are pre-filtered and capped to 3 queries × 3 results, with snippet lengths restricted to 350 characters to stay within free-tier TPM allowances.
-* **Max Token Truncation Protection**: LLMs are initialized with `max_tokens=4096` to prevent JSON tool calls from truncating mid-stream during large 6-section outline planning.
-* **Connection Pooling**: PostgreSQL connections use `ConnectionPool` with automatic reconnection, preventing idle disconnects common with cloud-hosted databases.
-* **Graceful Visual Fallback**: If diagram generation fails or `GOOGLE_API_KEY` is omitted, the reducer automatically places fallback callout blocks, ensuring the article remains fully readable and complete.
-
----
-
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
