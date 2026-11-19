@@ -155,7 +155,7 @@ GOOGLE_API_KEY="AIzaSy..."
 DATABASE_URL="postgresql://user:password@host.render.com/dbname?sslmode=require"
 
 # Optional LangSmith Tracing
-LANGSMITH_TRACING="false"
+LANGSMITH_TRACING="true"
 LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
 LANGSMITH_API_KEY=""
 LANGSMITH_PROJECT="BlogSmith"
