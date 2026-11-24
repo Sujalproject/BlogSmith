@@ -39,7 +39,7 @@ The result is a more structured writing workflow with observable execution, evid
 
 The workflow is designed around a **Map-Reduce architecture**. Each stage has a focused responsibility, while independent article sections can be generated concurrently.
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
     A([Topic / User Request]) --> B[1. Intelligent Router]
     B -->|Open-book / Hybrid| C[2. Research Agent]
@@ -56,16 +56,16 @@ flowchart TD
     J --> K[Plan Technical Visuals]
     K --> L[Gemini Image Generation]
     L --> M([Final Markdown Article])
-\`\`\`
+```
 
 ### Workflow at a glance
 
 | Stage | Agent / Component | Responsibility |
 |:--|:--|:--|
-| 01 | **Intelligent Router** | Selects \`closed_book\`, \`open_book\`, or \`hybrid\` mode based on topic complexity |
+| 01 | **Intelligent Router** | Selects `closed_book`, `open_book`, or `hybrid` mode based on topic complexity |
 | 02 | **Research Agent** | Uses Tavily to gather relevant web evidence, deduplicate URLs, and build an evidence pack |
 | 03 | **Editorial Orchestrator** | Creates the article outline, audience parameters, constraints, word targets, and section tasks |
-| 04 | **Parallel Workers** | Uses LangGraph's \`Send\` API to draft independent sections concurrently |
+| 04 | **Parallel Workers** | Uses LangGraph's `Send` API to draft independent sections concurrently |
 | 05 | **Reducer Subgraph** | Merges sections in order and plans where technical visuals belong |
 | 06 | **Visual Generation** | Uses Google Gemini to generate technical visual assets and place them in the article |
 
@@ -84,7 +84,7 @@ A LangGraph workflow with specialized router, research, orchestration, worker, a
 <td width="50%" valign="top">
 
 ### ⚡ Parallel Section Writing
-Dynamic fan-out with LangGraph's \`Send\` API lets independent sections be drafted concurrently.
+Dynamic fan-out with LangGraph's `Send` API lets independent sections be drafted concurrently.
 
 </td>
 </tr>
@@ -112,7 +112,7 @@ FastAPI Server-Sent Events stream execution updates to the frontend as the workf
 <td width="50%" valign="top">
 
 ### 💾 Persistent Checkpointing
-PostgreSQL \`PostgresSaver\` with \`psycopg_pool\` supports persistent graph checkpoints, with \`MemorySaver\` as an offline fallback.
+PostgreSQL `PostgresSaver` with `psycopg_pool` supports persistent graph checkpoints, with `MemorySaver` as an offline fallback.
 
 </td>
 </tr>
@@ -126,7 +126,7 @@ Inspect the structured outline, collected evidence, diagram specifications, and 
 <td width="50%" valign="top">
 
 ### ✍️ Editorial Studio
-Review the rendered article or raw Markdown, copy the content, and download the generated \`.md\` file.
+Review the rendered article or raw Markdown, copy the content, and download the generated `.md` file.
 
 </td>
 </tr>
@@ -163,7 +163,7 @@ The frontend is a custom-built, dark-mode workspace using HTML, CSS, and vanilla
 
 ## 🗂️ Project Structure
 
-\`\`\`text
+```text
 BlogSmith/
 │
 ├── app.py                     # FastAPI app, endpoints & SSE streaming
@@ -192,7 +192,7 @@ BlogSmith/
 │
 ├── images/                     # Generated technical diagrams
 └── outputs/                    # Generated run artifacts and Markdown
-\`\`\`
+```
 
 ---
 
@@ -210,45 +210,45 @@ Before running BlogSmith, make sure you have:
 
 ### 1. Clone the repository
 
-\`\`\`bash
+```bash
 git clone https://github.com/Sujalproject/BlogSmith.git
 cd BlogSmith
-\`\`\`
+```
 
 ### 2. Create and activate a virtual environment
 
 **Windows — PowerShell**
 
-\`\`\`powershell
+```powershell
 python -m venv .venv
-.\\.venv\\Scripts\\Activate.ps1
-\`\`\`
+.\.venv\Scripts\Activate.ps1
+```
 
 **Windows — Command Prompt**
 
-\`\`\`bat
+```bat
 python -m venv .venv
-.venv\\Scripts\\activate.bat
-\`\`\`
+.venv\Scripts\activate.bat
+```
 
 **Linux / macOS**
 
-\`\`\`bash
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
-\`\`\`
+```
 
 ### 3. Install dependencies
 
-\`\`\`bash
+```bash
 pip install -r requirements.txt
-\`\`\`
+```
 
 ### 4. Configure environment variables
 
-Create a \`.env\` file in the project root:
+Create a `.env` file in the project root:
 
-\`\`\`ini
+```ini
 # Required: LLM inference
 GROQ_API_KEY=your_groq_api_key
 
@@ -266,15 +266,15 @@ LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 LANGSMITH_API_KEY=your_langsmith_api_key
 LANGSMITH_PROJECT=BlogSmith
-\`\`\`
+```
 
-**Keep your API keys private.** Never commit your \`.env\` file or expose credentials in screenshots, logs, or public issues.
+**Keep your API keys private.** Never commit your `.env` file or expose credentials in screenshots, logs, or public issues.
 
 ### 5. Run BlogSmith
 
-\`\`\`bash
+```bash
 uvicorn app:app --reload --port 8000
-\`\`\`
+```
 
 Open the Editorial Studio:
 
@@ -286,11 +286,11 @@ Open the Editorial Studio:
 
 | Method | Endpoint | Description |
 |:--|:--|:--|
-| \`GET\` | \`/\` | Serves the BlogSmith Editorial Studio |
-| \`GET\` | \`/api/health\` | Returns workflow graph health status |
-| \`POST\` | \`/api/run\` | Starts article generation and streams workflow updates over SSE |
-| \`GET\` | \`/api/runs/{run_id}/download\` | Downloads the generated Markdown file for a run |
-| \`GET\` | \`/images/{filename}\` | Serves generated technical visual assets |
+| `GET` | `/` | Serves the BlogSmith Editorial Studio |
+| `GET` | `/api/health` | Returns workflow graph health status |
+| `POST` | `/api/run` | Starts article generation and streams workflow updates over SSE |
+| `GET` | `/api/runs/{run_id}/download` | Downloads the generated Markdown file for a run |
+| `GET` | `/images/{filename}` | Serves generated technical visual assets |
 
 ---
 
@@ -299,7 +299,7 @@ Open the Editorial Studio:
 A few implementation decisions that shape BlogSmith:
 
 - **Map-Reduce generation:** the orchestrator breaks an article into discrete section tasks, and parallel workers handle those tasks independently.
-- **Dynamic graph fan-out:** LangGraph's \`Send\` API is used to dispatch section workers based on the generated plan.
+- **Dynamic graph fan-out:** LangGraph's `Send` API is used to dispatch section workers based on the generated plan.
 - **Research context management:** URLs are deduplicated and research snippets are compressed before structured extraction. The project targets a substantial reduction in research-context token usage.
 - **Checkpoint resilience:** PostgreSQL-backed checkpointing is used when configured; the workflow can fall back to in-memory checkpointing when the database is unavailable.
 - **Observable execution:** SSE events connect backend workflow progress to the live Editorial Studio interface.
@@ -322,9 +322,9 @@ Potential areas to extend the project:
 Suggestions, bug reports, and contributions are welcome.
 
 1. Fork the repository.
-2. Create a feature branch: \`git checkout -b feature/your-feature\`.
-3. Commit your changes: \`git commit -m "Add: your feature"\`.
-4. Push your branch: \`git push origin feature/your-feature\`.
+2. Create a feature branch: `git checkout -b feature/your-feature`.
+3. Commit your changes: `git commit -m "Add: your feature"`.
+4. Push your branch: `git push origin feature/your-feature`.
 5. Open a Pull Request.
 
 ---
